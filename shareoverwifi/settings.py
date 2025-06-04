@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-9gue8bx5bqqnp&@n8j=1qtq1px8elrm%nsg#)ffsg851=qi@t_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["shareoverwifi.khanalsujit.com.np"]
 
 
 # Application definition
