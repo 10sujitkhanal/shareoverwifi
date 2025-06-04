@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sujit Share</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            font-family: 'Times New Roman', serif; /* Simulating a classic look */
+            font-size: 2em;
+            color: #c00; /* Red color as in the image */
+            font-weight: bold;
+            font-style: italic;
+        }
+        .header button, .header label {
+            padding: 8px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 5px;
+            transition: background-color 0.2s;
+        }
+        .header button:hover, .header label:hover {
+            background-color: #d0d0d0;
+        }
+        .status-section {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #555;
+            font-size: 0.9em;
+        }
+        .status-section .check-icon {
+            color: green;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .text-area-container {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 300px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+        textarea {
+            width: 100%;
+            height: 500px;
+            border: none;
+            outline: none;
+            resize: vertical; /* Allow vertical resizing */
+            font-size: 1em;
+            line-height: 1.5;
+            padding: 0; /* Remove default padding */
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .content-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #777;
+            margin-top: 5px;
+        }
+        .status-message {
+            margin-top: 10px;
+            color: green;
+            font-size: 0.9em;
+            text-align: right;
+        }
+        .error-message {
+            color: red;
+        }
+        .image-gallery-label {
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .image-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 1px solid #eee;
+            padding: 15px;
+            min-height: 100px;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+            align-items: flex-start; /* Align items to the top */
+        }
+        .image-item {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .image-item img {
+            max-width: 180px; /* Slightly larger image display */
+            max-height: 180px;
+            display: block;
+            margin: 0 auto 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+        }
+        .image-item span {
+            font-size: 0.75em;
+            color: #666;
+            display: block;
+            margin-top: 4px;
+        }
+        .image-item span.local-ip {
+            font-weight: bold;
+        }
+        .hidden-input {
+            display: none;
+        }
+        .initial-load-message {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+
+        /* --- Modal Styles --- */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be responsive */
+            max-width: 900px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+            animation-name: animatetop;
+            animation-duration: 0.4s;
+        }
+
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal-body {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center; /* Center items in the modal */
+            max-height: 70vh; /* Limit height to enable scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding: 10px;
+            border: 1px solid #eee;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .modal-image-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            text-align: center;
+            width: 180px; /* Fixed width for modal images */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Push download button to bottom */
+        }
+        .modal-image-item img {
+            max-width: 100%; /* Fill container */
+            height: auto;
+            display: block;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        .modal-image-item .image-info {
+            font-size: 0.8em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .modal-image-item .image-info span {
+            display: block;
+        }
+        .modal-image-item .download-single-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.9em;
+            width: 100%; /* Make button full width */
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .modal-image-item .download-single-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">Sujit Share</div>
+        <div>
+            <button id="copyBtn">Copy</button>
+            <label for="imageUpload" class="upload-button">
+                Upload Image
+            </label>
+            <input type="file" id="imageUpload" accept="image/*" class="hidden-input">
+            <button id="downloadBtn">Download</button> <button id="refreshBtn">Refresh</button>
+            <button id="settingsBtn" title="Not implemented">⚙️</button>
+        </div>
+    </div>
+
+    <div class="status-section">
+        <span class="check-icon">✅</span>
+        <span id="startTypingText">Start Typing!</span>
+    </div>
+
+    <div class="text-area-container">
+        <textarea id="mainTextArea" placeholder="Type here..."></textarea>
+    </div>
+
+    <div class="content-info">
+        <span id="textLocalIpDisplay">Local IP: N/A</span>
+        <span id="lastUpdatedDisplay">Last Updated: N/A</span>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <span class="image-gallery-label">Shared Images:</span>
+    <div class="image-gallery" id="imageGallery">
+        <p class="initial-load-message">Loading content...</p>
+    </div>
+
+    <div id="imageDownloadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Download Shared Images</h2>
+            <div id="modalImageContainer" class="modal-body">
+                <p class="initial-load-message">No images to download for this network.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textArea = document.getElementById('mainTextArea');
+        const statusMessage = document.getElementById('statusMessage');
+        const lastUpdatedDisplay = document.getElementById('lastUpdatedDisplay');
+        const textLocalIpDisplay = document.getElementById('textLocalIpDisplay');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const imageUploadInput = document.getElementById('imageUpload');
+        const imageGallery = document.getElementById('imageGallery');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn'); // Get the download button
+
+        // Modal elements
+        const imageDownloadModal = document.getElementById('imageDownloadModal');
+        const closeButton = imageDownloadModal.querySelector('.close-button');
+        const modalImageContainer = document.getElementById('modalImageContainer');
+
+        let typingTimer;
+        const doneTypingInterval = 500; // milliseconds before sending text after typing stops
+
+        let publicIpAddress = null; // Client's public IP (from ipify.org)
+        let localIpAddress = null;  // Client's local IP (from WebRTC or placeholder)
+
+        // --- IP Detection Functions ---
+        async function getPublicIp() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                publicIpAddress = data.ip;
+                console.log('Client Public IP:', publicIpAddress);
+            } catch (error) {
+                console.error('Error fetching public IP:', error);
+                statusMessage.textContent = 'Could not get public IP. Sharing might be limited.';
+                statusMessage.classList.add('error-message');
+            }
+        }
+
+        async function getLocalIp() {
+            try {
+                const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+                if (typeof RTCPeerConnection !== 'undefined') {
+                    const pc = new RTCPeerConnection({ iceServers: [] });
+                    pc.createDataChannel('');
+                    let hasCandidate = false;
+
+                    pc.onicecandidate = function(e) {
+                        if (!e.candidate) {
+                            if (!hasCandidate) {
+                                console.warn("No local IP candidate found via WebRTC.");
+                            }
+                            return;
+                        }
+                        const candidateStr = e.candidate.candidate;
+                        if (candidateStr.includes('host')) {
+                            const ip_regex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+                            const matches = candidateStr.match(ip_regex);
+                            if (matches && matches[1]) {
+                                localIpAddress = matches[1];
+                                console.log("Detected Local IP (via WebRTC):", localIpAddress);
+                                hasCandidate = true;
+                                pc.onicecandidate = null;
+                            }
+                        }
+                    };
+
+                    pc.createOffer().then(function(offer) {
+                        return pc.setLocalDescription(offer);
+                    }).catch(error => {
+                        console.warn("WebRTC offer failed:", error);
+                    });
+
+                    setTimeout(() => {
+                        if (!hasCandidate && !localIpAddress) {
+                            console.warn("WebRTC did not detect a local IP within timeout.");
+                            localIpAddress = 'Unknown (WebRTC failed)';
+                        }
+                        pc.close();
+                    }, 1000);
+
+                } else {
+                    console.warn("RTCPeerConnection not supported for direct local IP detection.");
+                    localIpAddress = 'Unknown (Browser not supported)';
+                }
+            } catch (error) {
+                console.error('Error in getLocalIp:', error);
+                localIpAddress = 'Error (Client-side IP detection)';
+            }
+        }
+
+        // --- Core Functions ---
+
+        async function sendTextToServer() {
+            if (!publicIpAddress) {
+                statusMessage.textContent = 'Waiting for public IP detection...';
+                statusMessage.classList.add('error-message');
+                return;
+            }
+            const text = textArea.value;
+            const payload = {
+                text: text,
+                public_ip: publicIpAddress,
+                // local_ip is captured server-side for accuracy based on the server's network view
+            };
+
+            try {
+                const response = await fetch('/update_text/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    statusMessage.textContent = 'Saved!';
+                    statusMessage.classList.remove('error-message');
+                    setTimeout(() => statusMessage.textContent = '', 2000);
+                } else {
+                    statusMessage.textContent = `Error saving text: ${data.message || ''}`;
+                    statusMessage.classList.add('error-message');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.textContent = 'Network error during save.';
+                statusMessage.classList.add('error-message');
+            }
+        }
+
+        async function fetchAndRefreshContent() {
+            if (!publicIpAddress) {
+                statusMessage.textContent = 'Waiting for public IP to refresh content...';
+                statusMessage.classList.add('error-message');
+                return;
+            }
+            try {
+                const response = await fetch(`/get_content/?public_ip=${encodeURIComponent(publicIpAddress)}`);
+                const data = await response.json();
+
+                // Update Text Area
+                if (data.text !== undefined) {
+                    textArea.value = data.text;
+                    textLocalIpDisplay.textContent = `Local IP: ${data.text_local_ip || 'N/A'}`;
+                    lastUpdatedDisplay.textContent = `Last Updated: ${data.text_last_updated || 'N/A'}`;
+                } else {
+                    statusMessage.textContent = 'Error fetching text.';
+                    statusMessage.classList.add('error-message');
+                }
+
+                // Update Image Gallery (main page)
+                imageGallery.innerHTML = '';
+                if (data.images && data.images.length > 0) {
+                    data.images.forEach(img => {
+                        const imgItem = document.createElement('div');
+                        imgItem.classList.add('image-item');
+                        imgItem.innerHTML = `
+                            <img src="${img.url}" alt="Shared Image">
+                            <span>Uploaded: ${new Date(img.uploaded_at).toLocaleString()}</span>
+                            <span class="local-ip">From: ${img.local_ip}</span>
+                        `;
+                        imageGallery.appendChild(imgItem);
+                    });
+                } else {
+                    imageGallery.innerHTML = '<p class="initial-load-message">No images shared yet for this network.</p>';
+                }
+
+                statusMessage.textContent = 'Content refreshed!';
+                statusMessage.classList.remove('error-message');
+                setTimeout(() => statusMessage.textContent = '', 2000);
+                return data.images; // Return images data for use in modal
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.textContent = 'Network error during refresh.';
+                statusMessage.classList.add('error-message');
+                return []; // Return empty array on error
+            }
+        }
+
+        async function uploadImage() {
+            if (!publicIpAddress || !imageUploadInput.files.length) {
+                statusMessage.textContent = 'Select an image and ensure public IP is detected.';
+                statusMessage.classList.add('error-message');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', imageUploadInput.files[0]);
+            formData.append('public_ip', publicIpAddress);
+            formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+
+            statusMessage.textContent = 'Uploading image...';
+            statusMessage.classList.remove('error-message');
+            try {
+                const response = await fetch('/upload_image/', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    statusMessage.textContent = 'Image uploaded successfully!';
+                    setTimeout(() => statusMessage.textContent = '', 2000);
+                    imageUploadInput.value = '';
+                    fetchAndRefreshContent();
+                } else {
+                    statusMessage.textContent = `Error uploading image: ${data.message || ''}`;
+                    statusMessage.classList.add('error-message');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.textContent = 'Network error during image upload.';
+                statusMessage.classList.add('error-message');
+            }
+        }
+
+        // --- Download Modal Functions ---
+        async function openDownloadModal() {
+            modalImageContainer.innerHTML = '<p class="initial-load-message">Loading images...</p>';
+            imageDownloadModal.style.display = 'flex'; // Use flex to center
+
+            // Reuse fetchAndRefreshContent to get the latest images, it already returns the array
+            const images = await fetchAndRefreshContent();
+
+            modalImageContainer.innerHTML = ''; // Clear loading message
+
+            if (images && images.length > 0) {
+                images.forEach(img => {
+                    const imgItem = document.createElement('div');
+                    imgItem.classList.add('modal-image-item');
+
+                    // Extract filename from URL for download attribute
+                    const filename = img.url.substring(img.url.lastIndexOf('/') + 1);
+
+                    imgItem.innerHTML = `
+                        <img src="${img.url}" alt="Shared Image">
+                        <div class="image-info">
+                            <span>Uploaded: ${new Date(img.uploaded_at).toLocaleString()}</span>
+                            <span class="local-ip">From: ${img.local_ip}</span>
+                        </div>
+                        <a href="${img.url}" download="${filename}" class="download-single-btn">Download</a>
+                    `;
+                    modalImageContainer.appendChild(imgItem);
+                });
+            } else {
+                modalImageContainer.innerHTML = '<p class="initial-load-message">No images to download for this network.</p>';
+            }
+        }
+
+        function closeDownloadModal() {
+            imageDownloadModal.style.display = 'none';
+        }
+
+        // --- Event Listeners ---
+        textArea.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            statusMessage.textContent = 'Typing...';
+            statusMessage.classList.remove('error-message');
+            typingTimer = setTimeout(sendTextToServer, doneTypingInterval);
+        });
+
+        refreshBtn.addEventListener('click', fetchAndRefreshContent);
+        imageUploadInput.addEventListener('change', uploadImage);
+        downloadBtn.addEventListener('click', openDownloadModal); // New: Download button listener
+
+        // Close modal when close button is clicked
+        closeButton.addEventListener('click', closeDownloadModal);
+
+        // Close modal when clicking outside the modal content
+        window.addEventListener('click', (event) => {
+            if (event.target == imageDownloadModal) {
+                closeDownloadModal();
+            }
+        });
+
+        // Copy button functionality
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(textArea.value);
+                statusMessage.textContent = 'Text copied!';
+                statusMessage.classList.remove('error-message');
+                setTimeout(() => statusMessage.textContent = '', 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                statusMessage.textContent = 'Failed to copy text.';
+                statusMessage.classList.add('error-message');
+            }
+        });
+
+        // --- Helper for CSRF Token ---
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // --- Initial Load ---
+        async function initializeApp() {
+            await getPublicIp();
+            await getLocalIp();
+            fetchAndRefreshContent();
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
