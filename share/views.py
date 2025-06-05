@@ -1,8 +1,9 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
 import json
+import os
 
 from .models import SharedDocument, SharedImage
 
@@ -74,6 +75,7 @@ def get_content(request):
     images = SharedImage.objects.filter(public_ip=client_public_ip).order_by('-uploaded_at')[:10]
     for img in images:
         images_data.append({
+            'id': img.id,
             'url': img.image.url,
             'uploaded_at': img.uploaded_at.strftime("%Y-%m-%d %H:%M:%S"),
             'local_ip': img.local_ip or 'N/A'
@@ -111,5 +113,57 @@ def upload_image(request):
             'uploaded_at': shared_image.uploaded_at.strftime("%Y-%m-%d %H:%M:%S"),
             'local_ip': shared_image.local_ip or 'N/A'
         })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+@csrf_exempt # Use proper CSRF handling in production (e.g., Delete method)
+@require_http_methods(["DELETE", "POST"]) # Allow POST for AJAX if DELETE isn't easily supported
+def delete_image(request, image_id):
+    """
+    Deletes a specific image by its ID.
+    """
+    try:
+        image = SharedImage.objects.get(id=image_id)
+        # Optional: Verify public_ip matches requesting user's public IP
+        # if request.POST.get('public_ip') != str(image.public_ip):
+        #     return JsonResponse({'status': 'error', 'message': 'Unauthorized deletion.'}, status=403)
+
+        # Delete the actual file from storage
+        if os.path.exists(image.image.path):
+            os.remove(image.image.path)
+        
+        image.delete() # Delete from database
+        return JsonResponse({'status': 'success', 'message': 'Image deleted.'})
+    except SharedImage.DoesNotExist:
+        raise Http404("Image not found.")
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt # Use proper CSRF handling in production
+@require_POST
+def clear_all_images(request):
+    """
+    Deletes all images associated with a specific public IP.
+    """
+    try:
+        data = json.loads(request.body)
+        client_public_ip = data.get('public_ip', '')
+
+        if not client_public_ip:
+            return JsonResponse({'status': 'error', 'message': 'Public IP not provided.'}, status=400)
+
+        images_to_delete = SharedImage.objects.filter(public_ip=client_public_ip)
+        count = images_to_delete.count()
+
+        # Delete files from storage first
+        for image in images_to_delete:
+            if os.path.exists(image.image.path):
+                os.remove(image.image.path)
+        
+        images_to_delete.delete() # Delete from database
+
+        return JsonResponse({'status': 'success', 'message': f'{count} images cleared for {client_public_ip}.'})
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON.'}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

@@ -61,7 +61,7 @@
         }
         textarea {
             width: 100%;
-            height: 500px;
+            height: 280px;
             border: none;
             outline: none;
             resize: vertical; /* Allow vertical resizing */
@@ -163,6 +163,8 @@
             position: relative;
             animation-name: animatetop;
             animation-duration: 0.4s;
+            display: flex; /* Use flexbox for internal layout */
+            flex-direction: column;
         }
 
         @keyframes animatetop {
@@ -192,7 +194,7 @@
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center; /* Center items in the modal */
-            max-height: 70vh; /* Limit height to enable scrolling */
+            max-height: 60vh; /* Limit height to enable scrolling */
             overflow-y: auto; /* Enable vertical scrolling */
             padding: 10px;
             border: 1px solid #eee;
@@ -209,7 +211,8 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Push download button to bottom */
+            justify-content: space-between; /* Push buttons to bottom */
+            position: relative; /* For delete button positioning */
         }
         .modal-image-item img {
             max-width: 100%; /* Fill container */
@@ -226,20 +229,54 @@
         .modal-image-item .image-info span {
             display: block;
         }
-        .modal-image-item .download-single-btn {
-            background-color: #007bff;
-            color: white;
+        .modal-image-item .actions {
+            display: flex;
+            gap: 5px;
+            margin-top: auto; /* Push to bottom */
+        }
+        .modal-image-item .download-single-btn,
+        .modal-image-item .delete-single-btn {
+            flex: 1; /* Make buttons take equal width */
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s;
             font-size: 0.9em;
-            width: 100%; /* Make button full width */
-            box-sizing: border-box; /* Include padding in width */
+            box-sizing: border-box;
+        }
+        .modal-image-item .download-single-btn {
+            background-color: #007bff;
+            color: white;
         }
         .modal-image-item .download-single-btn:hover {
             background-color: #0056b3;
+        }
+        .modal-image-item .delete-single-btn {
+            background-color: #dc3545; /* Red for delete */
+            color: white;
+        }
+        .modal-image-item .delete-single-btn:hover {
+            background-color: #c82333;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            text-align: right;
+        }
+        .modal-footer button {
+            background-color: #f44336; /* Red for clear all */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        .modal-footer button:hover {
+            background-color: #da190b;
         }
     </style>
 </head>
@@ -281,9 +318,12 @@
     <div id="imageDownloadModal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
-            <h2>Download Shared Images</h2>
+            <h2>Download & Manage Images</h2>
             <div id="modalImageContainer" class="modal-body">
                 <p class="initial-load-message">No images to download for this network.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="clearAllImagesBtn">Clear All Images</button>
             </div>
         </div>
     </div>
@@ -297,18 +337,19 @@
         const imageUploadInput = document.getElementById('imageUpload');
         const imageGallery = document.getElementById('imageGallery');
         const copyBtn = document.getElementById('copyBtn');
-        const downloadBtn = document.getElementById('downloadBtn'); // Get the download button
+        const downloadBtn = document.getElementById('downloadBtn');
 
         // Modal elements
         const imageDownloadModal = document.getElementById('imageDownloadModal');
         const closeButton = imageDownloadModal.querySelector('.close-button');
         const modalImageContainer = document.getElementById('modalImageContainer');
+        const clearAllImagesBtn = document.getElementById('clearAllImagesBtn'); // New button
 
         let typingTimer;
-        const doneTypingInterval = 500; // milliseconds before sending text after typing stops
+        const doneTypingInterval = 500;
 
-        let publicIpAddress = null; // Client's public IP (from ipify.org)
-        let localIpAddress = null;  // Client's local IP (from WebRTC or placeholder)
+        let publicIpAddress = null;
+        let localIpAddress = null;
 
         // --- IP Detection Functions ---
         async function getPublicIp() {
@@ -388,7 +429,6 @@
             const payload = {
                 text: text,
                 public_ip: publicIpAddress,
-                // local_ip is captured server-side for accuracy based on the server's network view
             };
 
             try {
@@ -436,10 +476,11 @@
                     statusMessage.classList.add('error-message');
                 }
 
-                // Update Image Gallery (main page)
+                // Update Image Gallery (main page - showing latest 10 images)
                 imageGallery.innerHTML = '';
-                if (data.images && data.images.length > 0) {
-                    data.images.forEach(img => {
+                const imagesToShow = data.images.slice(0, 10); // Show only the latest 10 in main gallery
+                if (imagesToShow && imagesToShow.length > 0) {
+                    imagesToShow.forEach(img => {
                         const imgItem = document.createElement('div');
                         imgItem.classList.add('image-item');
                         imgItem.innerHTML = `
@@ -456,7 +497,7 @@
                 statusMessage.textContent = 'Content refreshed!';
                 statusMessage.classList.remove('error-message');
                 setTimeout(() => statusMessage.textContent = '', 2000);
-                return data.images; // Return images data for use in modal
+                return data.images; // Return all images data for use in modal
             } catch (error) {
                 console.error('Error:', error);
                 statusMessage.textContent = 'Network error during refresh.';
@@ -489,7 +530,7 @@
                     statusMessage.textContent = 'Image uploaded successfully!';
                     setTimeout(() => statusMessage.textContent = '', 2000);
                     imageUploadInput.value = '';
-                    fetchAndRefreshContent();
+                    fetchAndRefreshContent(); // Refresh main gallery
                 } else {
                     statusMessage.textContent = `Error uploading image: ${data.message || ''}`;
                     statusMessage.classList.add('error-message');
@@ -506,17 +547,17 @@
             modalImageContainer.innerHTML = '<p class="initial-load-message">Loading images...</p>';
             imageDownloadModal.style.display = 'flex'; // Use flex to center
 
-            // Reuse fetchAndRefreshContent to get the latest images, it already returns the array
-            const images = await fetchAndRefreshContent();
+            // Fetch all images for the modal
+            const images = await fetchAndRefreshContent(); // This fetches all and refreshes main gallery
 
             modalImageContainer.innerHTML = ''; // Clear loading message
 
             if (images && images.length > 0) {
                 images.forEach(img => {
+                    console.log("ID", img)
                     const imgItem = document.createElement('div');
                     imgItem.classList.add('modal-image-item');
 
-                    // Extract filename from URL for download attribute
                     const filename = img.url.substring(img.url.lastIndexOf('/') + 1);
 
                     imgItem.innerHTML = `
@@ -525,10 +566,24 @@
                             <span>Uploaded: ${new Date(img.uploaded_at).toLocaleString()}</span>
                             <span class="local-ip">From: ${img.local_ip}</span>
                         </div>
-                        <a href="${img.url}" download="${filename}" class="download-single-btn">Download</a>
+                        <div class="actions">
+                            <a href="${img.url}" download="${filename}" class="download-single-btn">Download</a>
+                            <button class="delete-single-btn" data-image-id="${img.id}">Delete</button>
+                        </div>
                     `;
                     modalImageContainer.appendChild(imgItem);
                 });
+
+                // Add event listeners to newly created delete buttons
+                modalImageContainer.querySelectorAll('.delete-single-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const imageId = event.target.dataset.imageId;
+                        if (confirm('Are you sure you want to delete this image?')) {
+                            deleteImage(imageId);
+                        }
+                    });
+                });
+
             } else {
                 modalImageContainer.innerHTML = '<p class="initial-load-message">No images to download for this network.</p>';
             }
@@ -536,6 +591,73 @@
 
         function closeDownloadModal() {
             imageDownloadModal.style.display = 'none';
+        }
+
+        // --- Deletion Functions ---
+        async function deleteImage(imageId) {
+            try {
+                const response = await fetch(`/delete_image/${imageId}/`, {
+                    method: 'POST', // Using POST for deletion as per views.py (or DELETE)
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    // body: JSON.stringify({ public_ip: publicIpAddress }) // Include public_ip if needed for server-side auth
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    statusMessage.textContent = 'Image deleted successfully!';
+                    statusMessage.classList.remove('error-message');
+                    setTimeout(() => statusMessage.textContent = '', 2000);
+                    // Refresh both the main gallery and the modal content
+                    openDownloadModal(); // Re-open modal to refresh its content
+                    fetchAndRefreshContent(); // Refresh main gallery too
+                } else {
+                    statusMessage.textContent = `Error deleting image: ${data.message || ''}`;
+                    statusMessage.classList.add('error-message');
+                }
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                statusMessage.textContent = 'Network error during image deletion.';
+                statusMessage.classList.add('error-message');
+            }
+        }
+
+        async function clearAllImages() {
+            if (!publicIpAddress) {
+                statusMessage.textContent = 'Public IP not detected, cannot clear images.';
+                statusMessage.classList.add('error-message');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete ALL images for this network? This action cannot be undone.')) {
+                return; // User cancelled
+            }
+
+            try {
+                const response = await fetch('/clear_all_images/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({ public_ip: publicIpAddress })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    statusMessage.textContent = 'All images cleared successfully!';
+                    statusMessage.classList.remove('error-message');
+                    setTimeout(() => statusMessage.textContent = '', 2000);
+                    closeDownloadModal(); // Close modal after clearing
+                    fetchAndRefreshContent(); // Refresh main gallery
+                } else {
+                    statusMessage.textContent = `Error clearing images: ${data.message || ''}`;
+                    statusMessage.classList.add('error-message');
+                }
+            } catch (error) {
+                console.error('Error clearing all images:', error);
+                statusMessage.textContent = 'Network error during clearing images.';
+                statusMessage.classList.add('error-message');
+            }
         }
 
         // --- Event Listeners ---
@@ -548,17 +670,18 @@
 
         refreshBtn.addEventListener('click', fetchAndRefreshContent);
         imageUploadInput.addEventListener('change', uploadImage);
-        downloadBtn.addEventListener('click', openDownloadModal); // New: Download button listener
+        downloadBtn.addEventListener('click', openDownloadModal);
 
-        // Close modal when close button is clicked
+        // Close modal when close button is clicked or user clicks outside
         closeButton.addEventListener('click', closeDownloadModal);
-
-        // Close modal when clicking outside the modal content
         window.addEventListener('click', (event) => {
             if (event.target == imageDownloadModal) {
                 closeDownloadModal();
             }
         });
+
+        // New event listener for Clear All Images button
+        clearAllImagesBtn.addEventListener('click', clearAllImages);
 
         // Copy button functionality
         copyBtn.addEventListener('click', async () => {
